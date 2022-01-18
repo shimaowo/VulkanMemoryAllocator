@@ -2,17 +2,18 @@ cmake_minimum_required(VERSION 3.9)
 
 project(VulkanMemoryAllocator)
 
-find_package(Vulkan REQUIRED)
-include_directories(${Vulkan_INCLUDE_DIR})
-
 # VulkanMemoryAllocator contains an sample application and VmaReplay which are not build by default
 option(VMA_BUILD_SAMPLE "Build VulkanMemoryAllocator sample application" OFF)
 option(VMA_BUILD_SAMPLE_SHADERS "Build VulkanMemoryAllocator sample application's shaders" OFF)
 option(VMA_BUILD_REPLAY "Build VulkanMemoryAllocator replay application" OFF)
 
+option(VMA_BUILD_LIBRARY "Build VulkanMemoryAllocator static library" OFF)
+
 message(STATUS "VMA_BUILD_SAMPLE = ${VMA_BUILD_SAMPLE}")
 message(STATUS "VMA_BUILD_SAMPLE_SHADERS = ${VMA_BUILD_SAMPLE_SHADERS}")
 message(STATUS "VMA_BUILD_REPLAY = ${VMA_BUILD_REPLAY}")
+
+message(STATUS "VMA_BUILD_LIBRARY = ${VMA_BUILD_LIBRARY}")
 
 option(VMA_RECORDING_ENABLED "Enable VMA memory recording for debugging" OFF)
 option(VMA_USE_STL_CONTAINERS "Use C++ STL containers instead of VMA's containers" OFF)
@@ -31,11 +32,15 @@ message(STATUS "VMA_DEBUG_INITIALIZE_ALLOCATIONS = ${VMA_DEBUG_INITIALIZE_ALLOCA
 message(STATUS "VMA_DEBUG_GLOBAL_MUTEX = ${VMA_DEBUG_GLOBAL_MUTEX}")
 message(STATUS "VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT = ${VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT}")
 
+add_library(vma_headers INTERFACE)
+add_library(vma::vma_headers ALIAS vma_headers)
+target_include_directories(vma_headers INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
+
 IF(VMA_BUILD_SAMPLE)
 	SET(VMA_BUILD_SAMPLE_SHADERS ON)
 ENDIF(VMA_BUILD_SAMPLE)
 
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 option(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
 
 if (DOXYGEN_FOUND AND BUILD_DOCUMENTATION)
@@ -51,8 +56,10 @@ if (DOXYGEN_FOUND AND BUILD_DOCUMENTATION)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM )
-else (DOXYGEN_FOUND AND BUILD_DOCUMENTATION)
+elseif (BUILD_DOCUMENTATION)
   message("Doxygen need to be installed to generate the doxygen documentation")
 endif (DOXYGEN_FOUND AND BUILD_DOCUMENTATION)
 
-add_subdirectory(src)
+if(VMA_BUILD_LIBRARY)
+	add_subdirectory(src)
+endif()
